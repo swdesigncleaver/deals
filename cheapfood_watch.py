@@ -62,7 +62,7 @@ LOG = logging.getLogger("cheapfood_watch")
 
 USER_AGENT = (
     "cheapfood-watch/1.0 (personal RSS watcher; "
-    "https://github.com/ — replace with your contact info)"
+    "https://github.com/ - replace with your contact info)"
 )
 
 # Standard BigCommerce Stencil/Cornerstone product-grid markup. Each is a
