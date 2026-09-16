@@ -268,16 +268,17 @@ def build_feed(
         dt.datetime.now(dt.timezone.utc)
     )
 
-    for product, first_seen in list(items)[:max_items]:
+    # ElementTree escapes '<' and '>' in .text, which would turn a literal
+    # <br/> into "&lt;br/&gt;" instead of an actual line break once a reader
+    # renders the description as HTML — the conventional way RSS readers
+    # treat <description>. To get a real CDATA section (verbatim markup,
+    # not escaped), each description is written as a unique placeholder
+    # token and swapped for real CDATA in the serialized bytes afterwards.
+    cdata_fills: list[tuple[str, str]] = []
+
+    for idx, (product, first_seen) in enumerate(list(items)[:max_items]):
         item = ET.SubElement(channel, "item")
-
-        price_suffix = ""
-        if product.price and product.was_price:
-            price_suffix = f" — {product.price} (was {product.was_price})"
-        elif product.price:
-            price_suffix = f" — {product.price}"
-
-        ET.SubElement(item, "title").text = f"{product.title}{price_suffix}"
+        ET.SubElement(item, "title").text = product.title
         ET.SubElement(item, "link").text = product.url
 
         guid = ET.SubElement(item, "guid")
@@ -285,12 +286,15 @@ def build_feed(
         guid.set("isPermaLink", "true")
 
         if product.price and product.was_price:
-            description = f"{product.price} (was {product.was_price})"
+            description_html = f"Price: {product.price}<br/>Was: {product.was_price}"
         elif product.price:
-            description = product.price
+            description_html = f"Price: {product.price}"
         else:
-            description = product.title
-        ET.SubElement(item, "description").text = description
+            description_html = product.title
+
+        placeholder = f"@@CDATA_{idx}@@"
+        ET.SubElement(item, "description").text = placeholder
+        cdata_fills.append((placeholder, description_html))
 
         if product.image:
             enclosure = ET.SubElement(item, "enclosure")
@@ -299,7 +303,14 @@ def build_feed(
 
         ET.SubElement(item, "pubDate").text = format_datetime(first_seen)
 
-    return b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(rss, encoding="utf-8")
+    body = ET.tostring(rss, encoding="utf-8")
+    for placeholder, html in cdata_fills:
+        # Guard against the (extremely unlikely, here) case of a price
+        # string containing the literal CDATA terminator sequence.
+        safe_html = html.replace("]]>", "]]]]><![CDATA[>")
+        body = body.replace(placeholder.encode("utf-8"), f"<![CDATA[{safe_html}]]>".encode("utf-8"))
+
+    return b'<?xml version="1.0" encoding="UTF-8"?>\n' + body
 
 
 # --------------------------------------------------------------------------- #
