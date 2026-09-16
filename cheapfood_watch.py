@@ -38,6 +38,7 @@ import dataclasses
 import datetime as dt
 import json
 import logging
+import re
 import sys
 import time
 import urllib.robotparser as robotparser
@@ -71,9 +72,14 @@ USER_AGENT = (
 DEFAULT_SELECTORS = {
     "card": "li.product, article.product, div.product, .productGrid > li",
     "title_link": "h4.card-title a, h3.card-title a, a.card-title, .card-title a",
-    "price": ".price, .card-text--price .price, span.price",
     "image": "img",
 }
+
+# Matches "£0.55", "£ 1.99", "£12" — deliberately loose since price markup
+# varies by theme customisation far more than title/link markup does, and
+# scanning for the currency symbol in the card's plain text is more robust
+# than guessing CSS class names for a "sale price" span vs an "RRP" span.
+PRICE_PATTERN = re.compile(r"£\s?\d{1,4}(?:\.\d{2})?")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -82,8 +88,32 @@ class Product:
 
     url: str
     title: str
-    price: Optional[str] = None
+    price: Optional[str] = None       # the current/display price, e.g. "£0.55"
+    was_price: Optional[str] = None   # the original price, if this is a discount
     image: Optional[str] = None
+
+
+def extract_prices(card_text: str) -> tuple[Optional[str], Optional[str]]:
+    """Find (current_price, was_price) from a product card's rendered text.
+
+    Rather than depend on a specific "sale price" vs. "RRP price" CSS class
+    (which varies a lot between store theme customisations and is easy to
+    guess wrong), this just finds every £ amount mentioned anywhere in the
+    card and assumes: one amount means no discount is shown; two or more
+    means the lowest is what you'd actually pay and the highest is the
+    original/RRP price being struck through.
+
+    Returns (None, None) if no £ amount is found at all.
+    """
+    amounts = sorted(
+        float(match.replace("£", "").replace(" ", ""))
+        for match in PRICE_PATTERN.findall(card_text)
+    )
+    if not amounts:
+        return None, None
+    current = amounts[0]
+    was = amounts[-1] if len(amounts) > 1 and amounts[-1] > current else None
+    return f"£{current:.2f}", (f"£{was:.2f}" if was is not None else None)
 
 
 class WatchError(RuntimeError):
@@ -179,8 +209,7 @@ def parse_products(html: str, base_url: str, selectors: dict) -> list[Product]:
         if not title:
             continue
 
-        price_el = card.select_one(selectors["price"])
-        price = price_el.get_text(strip=True) if price_el else None
+        price, was_price = extract_prices(card.get_text(" ", strip=True))
 
         image = None
         img_el = card.select_one(selectors["image"])
@@ -191,7 +220,7 @@ def parse_products(html: str, base_url: str, selectors: dict) -> list[Product]:
             if src and "loading.svg" not in src:
                 image = urljoin(base_url, src)
 
-        products.append(Product(url=url, title=title, price=price, image=image))
+        products.append(Product(url=url, title=title, price=price, was_price=was_price, image=image))
 
     return products
 
@@ -241,17 +270,27 @@ def build_feed(
 
     for product, first_seen in list(items)[:max_items]:
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = product.title
+
+        price_suffix = ""
+        if product.price and product.was_price:
+            price_suffix = f" — {product.price} (was {product.was_price})"
+        elif product.price:
+            price_suffix = f" — {product.price}"
+
+        ET.SubElement(item, "title").text = f"{product.title}{price_suffix}"
         ET.SubElement(item, "link").text = product.url
 
         guid = ET.SubElement(item, "guid")
         guid.text = product.url
         guid.set("isPermaLink", "true")
 
-        description_bits = [product.price] if product.price else []
-        ET.SubElement(item, "description").text = (
-            " | ".join(description_bits) if description_bits else product.title
-        )
+        if product.price and product.was_price:
+            description = f"{product.price} (was {product.was_price})"
+        elif product.price:
+            description = product.price
+        else:
+            description = product.title
+        ET.SubElement(item, "description").text = description
 
         if product.image:
             enclosure = ET.SubElement(item, "enclosure")
@@ -324,17 +363,34 @@ def scan(
                 state[product.url] = {
                     "title": product.title,
                     "price": product.price,
+                    "was_price": product.was_price,
                     "image": product.image,
                     "first_seen": now.isoformat(),
                     "source": url,
                 }
                 newly_seen.append(product)
+            else:
+                # Already tracked — refresh price/title/image in case they've
+                # changed (e.g. a deeper discount) without resetting when it
+                # was first spotted, so the feed reflects current pricing.
+                state[product.url].update(
+                    title=product.title,
+                    price=product.price,
+                    was_price=product.was_price,
+                    image=product.image,
+                )
 
     save_state(state_path, state)
 
     all_items: list[tuple[Product, dt.datetime]] = []
     for url, info in state.items():
-        product = Product(url=url, title=info["title"], price=info.get("price"), image=info.get("image"))
+        product = Product(
+            url=url,
+            title=info["title"],
+            price=info.get("price"),
+            was_price=info.get("was_price"),
+            image=info.get("image"),
+        )
         all_items.append((product, dt.datetime.fromisoformat(info["first_seen"])))
     all_items.sort(key=lambda pair: pair[1], reverse=True)
 
@@ -380,7 +436,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dump-html", type=Path, default=None, help="Write the raw HTML of the first URL here, for debugging selectors")
     parser.add_argument("--selector-card", default=DEFAULT_SELECTORS["card"])
     parser.add_argument("--selector-title", default=DEFAULT_SELECTORS["title_link"])
-    parser.add_argument("--selector-price", default=DEFAULT_SELECTORS["price"])
     parser.add_argument("--selector-image", default=DEFAULT_SELECTORS["image"])
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser
@@ -396,7 +451,6 @@ def main(argv: Optional[list[str]] = None) -> int:
     selectors = {
         "card": args.selector_card,
         "title_link": args.selector_title,
-        "price": args.selector_price,
         "image": args.selector_image,
     }
 
@@ -417,7 +471,10 @@ def main(argv: Optional[list[str]] = None) -> int:
             dump_html_path=args.dump_html,
         )
         for product in new_products:
-            LOG.info("NEW: %s (%s) — %s", product.title, product.price or "price n/a", product.url)
+            price_bit = product.price or "price n/a"
+            if product.was_price:
+                price_bit += f", was {product.was_price}"
+            LOG.info("NEW: %s (%s) — %s", product.title, price_bit, product.url)
 
     if args.interval > 0:
         LOG.info("Looping every %.0fs — Ctrl+C to stop", args.interval)
