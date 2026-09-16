@@ -4,10 +4,10 @@ NOTE ON THE FIXTURE: I couldn't pull raw HTML for cheapfood.co.uk from my
 sandbox (only a markdown-rendered view was available), so SAMPLE_HTML below
 is a hand-built stand-in for the standard BigCommerce Stencil/Cornerstone
 product-grid markup this store's platform uses — not a byte-for-byte capture
-of the live page. Before relying on this in production, run once with
---dump-html against a real listing page and diff its structure against this
-fixture; adjust DEFAULT_SELECTORS (or pass --selector-*) if the theme has
-been customised.
+of the live page. Price extraction deliberately doesn't depend on exact CSS
+class names (see extract_prices) precisely because a first attempt at
+guessing those classes turned out wrong against the real site — it just
+scans each card's text for £ amounts instead.
 """
 
 import sys
@@ -15,7 +15,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cheapfood_watch import DEFAULT_SELECTORS, Product, matches_keywords, parse_products  # noqa: E402
+from cheapfood_watch import (  # noqa: E402
+    DEFAULT_SELECTORS,
+    Product,
+    extract_prices,
+    matches_keywords,
+    parse_products,
+)
 
 BASE_URL = "https://cheapfood.co.uk/food/sports-energy/"
 
@@ -41,7 +47,10 @@ SAMPLE_HTML = """
     </figure>
     <div class="card-body">
       <h4 class="card-title"><a href="/grenade-oreo-protein-bar-60g/">Grenade - Oreo - Protein Bar - 60g</a></h4>
-      <div class="card-text--price"><span class="price price--withoutTax">&#163;0.55</span></div>
+      <div class="card-text--price">
+        <span class="price price--rrp"><s>&#163;1.99</s></span>
+        <span class="price price--withoutTax">&#163;0.55</span>
+      </div>
     </div>
   </li>
   <!-- a malformed card with no link at all should just be skipped -->
@@ -58,15 +67,69 @@ def test_parses_expected_number_of_products():
     assert len(products) == 2
 
 
-def test_extracts_title_url_price_and_image():
+def test_extracts_title_url_price_was_price_and_image():
     products = parse_products(SAMPLE_HTML, BASE_URL, DEFAULT_SELECTORS)
     grenade = next(p for p in products if "Grenade" in p.title)
     assert grenade == Product(
         url="https://cheapfood.co.uk/grenade-oreo-protein-bar-60g/",
         title="Grenade - Oreo - Protein Bar - 60g",
         price="£0.55",
+        was_price="£1.99",
         image="https://cdn11.bigcommerce.com/images/oreo.png",
     )
+
+
+def test_product_with_no_discount_has_no_was_price():
+    products = parse_products(SAMPLE_HTML, BASE_URL, DEFAULT_SELECTORS)
+    nicks = next(p for p in products if "N!ck's" in p.title)
+    assert nicks.price == "£1.25"
+    assert nicks.was_price is None
+
+
+def test_extract_prices_single_amount_has_no_was_price():
+    assert extract_prices("Grenade Protein Bar £0.55") == ("£0.55", None)
+
+
+def test_extract_prices_two_amounts_lowest_is_current():
+    assert extract_prices("was £1.99 now £0.55") == ("£0.55", "£1.99")
+
+
+def test_extract_prices_no_amount_returns_none_none():
+    assert extract_prices("No price shown here") == (None, None)
+
+
+def test_build_feed_wraps_description_in_real_cdata_with_line_break():
+    import cheapfood_watch as cw
+    from xml.etree import ElementTree as ET
+
+    discounted = Product(
+        url="https://cheapfood.co.uk/grenade-oreo-protein-bar-60g/",
+        title="Grenade - Oreo - Protein Bar - 60g",
+        price="£0.55",
+        was_price="£1.99",
+    )
+    plain = Product(
+        url="https://cheapfood.co.uk/nicks-peanut-butter-protein-bar-50g/",
+        title="N!ck's - Peanut Butter Protein Bar - 50g",
+        price="£1.25",
+    )
+    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    feed_bytes = cw.build_feed("t", "https://cheapfood.co.uk/", "d", [(discounted, now), (plain, now)], 10)
+    feed_text = feed_bytes.decode("utf-8")
+
+    # The raw serialized bytes must contain a REAL, unescaped <br/> inside
+    # CDATA — not the HTML-escaped "&lt;br/&gt;" ElementTree would produce
+    # for plain .text — otherwise readers show the literal tag as text.
+    assert "<![CDATA[Price: £0.55<br/>Was: £1.99]]>" in feed_text
+    assert "&lt;br/&gt;" not in feed_text
+
+    # Titles should be plain product names again, with no price appended.
+    assert "<title>Grenade - Oreo - Protein Bar - 60g</title>" in feed_text
+
+    # And the whole thing must still be well-formed XML.
+    tree = ET.fromstring(feed_text)
+    descriptions = [item.find("description").text for item in tree.findall(".//item")]
+    assert descriptions == ["Price: £0.55<br/>Was: £1.99", "Price: £1.25"]
 
 
 def test_strips_tracking_query_params_from_url():
