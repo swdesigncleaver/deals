@@ -124,7 +124,7 @@ def test_build_feed_wraps_description_in_real_cdata_with_line_break():
     assert "&lt;br/&gt;" not in feed_text
 
     # Titles should be plain product names again, with no price appended.
-    assert "<title>Grenade - Oreo - Protein Bar - 60g</title>" in feed_text
+    assert "<title>£0.55 (was £1.99) Grenade - Oreo - Protein Bar - 60g</title>" in feed_text
 
     # And the whole thing must still be well-formed XML.
     tree = ET.fromstring(feed_text)
