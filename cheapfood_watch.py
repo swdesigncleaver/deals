@@ -251,6 +251,15 @@ def save_state(path: Path, state: dict) -> None:
 # --------------------------------------------------------------------------- #
 
 
+# Bumped only when we need to force every subscriber's reader to treat all
+# existing items as brand-new (e.g. a reader that cached pre-fix titles and
+# offers no manual "clear cache" option). Appending this to the <guid> — but
+# NOT to <link>, which still points at the real product page — changes the
+# identifier readers dedupe on without touching anything the person clicks.
+# Bump it again in future only if the same situation recurs.
+GUID_CACHE_BUST = "v2"
+
+
 def build_feed(
     title: str,
     link: str,
@@ -282,8 +291,8 @@ def build_feed(
         ET.SubElement(item, "link").text = product.url
 
         guid = ET.SubElement(item, "guid")
-        guid.text = product.url
-        guid.set("isPermaLink", "true")
+        guid.text = f"{product.url}#{GUID_CACHE_BUST}"
+        guid.set("isPermaLink", "false")
 
         if product.price and product.was_price:
             description_html = f"Price: {product.price}<br/>Was: {product.was_price}"
