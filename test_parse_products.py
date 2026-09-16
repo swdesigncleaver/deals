@@ -132,6 +132,24 @@ def test_build_feed_wraps_description_in_real_cdata_with_line_break():
     assert descriptions == ["Price: £0.55<br/>Was: £1.99", "Price: £1.25"]
 
 
+def test_guid_is_cache_busted_but_link_stays_clean():
+    import cheapfood_watch as cw
+    from xml.etree import ElementTree as ET
+
+    product = Product(url="https://cheapfood.co.uk/some-bar/", title="Some Bar", price="£1.00")
+    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    feed_bytes = cw.build_feed("t", "https://cheapfood.co.uk/", "d", [(product, now)], 10)
+    tree = ET.fromstring(feed_bytes)
+    item = tree.find(".//item")
+
+    # <link> is what a reader takes you to on click — must stay the real URL.
+    assert item.find("link").text == "https://cheapfood.co.uk/some-bar/"
+    # <guid> is what readers dedupe on — carries the cache-bust suffix and
+    # is correctly marked as not a literal permalink once it does.
+    assert item.find("guid").text == f"https://cheapfood.co.uk/some-bar/#{cw.GUID_CACHE_BUST}"
+    assert item.find("guid").get("isPermaLink") == "false"
+
+
 def test_strips_tracking_query_params_from_url():
     products = parse_products(SAMPLE_HTML, BASE_URL, DEFAULT_SELECTORS)
     for product in products:
