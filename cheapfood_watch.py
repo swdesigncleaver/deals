@@ -257,7 +257,7 @@ def save_state(path: Path, state: dict) -> None:
 # NOT to <link>, which still points at the real product page — changes the
 # identifier readers dedupe on without touching anything the person clicks.
 # Bump it again in future only if the same situation recurs.
-GUID_CACHE_BUST = "v2"
+GUID_CACHE_BUST = "v4"
 
 
 def build_feed(
@@ -287,7 +287,20 @@ def build_feed(
 
     for idx, (product, first_seen) in enumerate(list(items)[:max_items]):
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = product.title
+
+        # Price is deliberately duplicated in both title and description:
+        # some reader views (compact popups/pulldowns) only ever render the
+        # title, while others open a fuller detail pane that renders the
+        # description as HTML — putting it in only one leaves it invisible
+        # in the other. Price leads the title so it's visible even where a
+        # reader truncates a long product name.
+        if product.price and product.was_price:
+            price_prefix = f"{product.price} (was {product.was_price}) "
+        elif product.price:
+            price_prefix = f"{product.price} "
+        else:
+            price_prefix = ""
+        ET.SubElement(item, "title").text = f"{price_prefix}{product.title}"
         ET.SubElement(item, "link").text = product.url
 
         guid = ET.SubElement(item, "guid")
