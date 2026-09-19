@@ -360,6 +360,13 @@ def scan(
     now = dt.datetime.now(dt.timezone.utc)
     newly_seen: list[Product] = []
 
+    # Ground truth for pruning: a tracked item only gets dropped if its
+    # source page was successfully re-fetched this run AND it's no longer
+    # listed there — never because a page failed to load, which would
+    # otherwise wrongly wipe out perfectly in-stock items.
+    successfully_fetched_urls: set[str] = set()
+    currently_listed_urls: set[str] = set()
+
     for i, url in enumerate(urls):
         if respect_robots and not robots_allow(url, user_agent):
             LOG.error("robots.txt disallows fetching %s — skipping", url)
@@ -374,6 +381,8 @@ def scan(
         if dump_html_path and i == 0:
             dump_html_path.write_text(html, encoding="utf-8")
             LOG.info("Dumped raw HTML for %s to %s", url, dump_html_path)
+
+        successfully_fetched_urls.add(url)
 
         products = parse_products(html, url, selectors)
         LOG.info("Parsed %d product card(s) from %s", len(products), url)
@@ -392,6 +401,7 @@ def scan(
             )
 
         for product in matching:
+            currently_listed_urls.add(product.url)
             if product.url not in state:
                 state[product.url] = {
                     "title": product.title,
@@ -412,6 +422,18 @@ def scan(
                     was_price=product.was_price,
                     image=product.image,
                 )
+
+    # Prune anything that's no longer listed on a page we successfully
+    # re-fetched — sold out, delisted, or simply fallen off a "newest
+    # first" page. This is what keeps the feed showing current deals only
+    # instead of accumulating every product ever spotted.
+    no_longer_listed = [
+        url for url, info in state.items()
+        if info.get("source") in successfully_fetched_urls and url not in currently_listed_urls
+    ]
+    for url in no_longer_listed:
+        LOG.info("REMOVED (no longer listed): %s — %s", state[url]["title"], url)
+        del state[url]
 
     save_state(state_path, state)
 
