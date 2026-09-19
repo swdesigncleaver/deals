@@ -81,6 +81,16 @@ DEFAULT_SELECTORS = {
 # than guessing CSS class names for a "sale price" span vs an "RRP" span.
 PRICE_PATTERN = re.compile(r"£\s?\d{1,4}(?:\.\d{2})?")
 
+# Common ways storefronts flag an unavailable product directly in the card
+# text, rather than removing it from the listing page entirely. This is a
+# best-effort text match, not a confirmed selector for this specific store
+# (same caveat as PRICE_PATTERN) — if a real out-of-stock card slips
+# through, the exact wording likely needs adding here.
+OUT_OF_STOCK_PATTERN = re.compile(
+    r"out of stock|sold out|currently unavailable|notify me when available",
+    re.IGNORECASE,
+)
+
 
 @dataclasses.dataclass(frozen=True)
 class Product:
@@ -91,6 +101,7 @@ class Product:
     price: Optional[str] = None       # the current/display price, e.g. "£0.55"
     was_price: Optional[str] = None   # the original price, if this is a discount
     image: Optional[str] = None
+    in_stock: bool = True
 
 
 def extract_prices(card_text: str) -> tuple[Optional[str], Optional[str]]:
@@ -209,7 +220,9 @@ def parse_products(html: str, base_url: str, selectors: dict) -> list[Product]:
         if not title:
             continue
 
-        price, was_price = extract_prices(card.get_text(" ", strip=True))
+        card_text = card.get_text(" ", strip=True)
+        price, was_price = extract_prices(card_text)
+        in_stock = not OUT_OF_STOCK_PATTERN.search(card_text)
 
         image = None
         img_el = card.select_one(selectors["image"])
@@ -220,7 +233,10 @@ def parse_products(html: str, base_url: str, selectors: dict) -> list[Product]:
             if src and "loading.svg" not in src:
                 image = urljoin(base_url, src)
 
-        products.append(Product(url=url, title=title, price=price, was_price=was_price, image=image))
+        products.append(Product(
+            url=url, title=title, price=price, was_price=was_price,
+            image=image, in_stock=in_stock,
+        ))
 
     return products
 
@@ -399,6 +415,14 @@ def scan(
                 "%d of %d card(s) on %s matched %s",
                 len(matching), len(products), url, keywords,
             )
+
+        out_of_stock = [p for p in matching if not p.in_stock]
+        if out_of_stock:
+            LOG.info(
+                "%d card(s) on %s are marked out of stock — excluded: %s",
+                len(out_of_stock), url, ", ".join(p.title for p in out_of_stock),
+            )
+        matching = [p for p in matching if p.in_stock]
 
         for product in matching:
             currently_listed_urls.add(product.url)
