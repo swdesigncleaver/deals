@@ -223,3 +223,88 @@ def test_scan_only_stores_and_feeds_matching_products(tmp_path, monkeypatch):
     feed_xml = feed_path.read_text(encoding="utf-8")
     assert "Peanut Butter" in feed_xml
     assert "Oreo" not in feed_xml
+
+
+# HTML for a second scan where the Grenade bar has sold out / been delisted
+# — only N!ck's remains on the page. Used to test pruning.
+SAMPLE_HTML_GRENADE_GONE = """
+<html><body>
+<ul class="productGrid">
+  <li class="product">
+    <figure class="card-figure">
+      <a href="/nicks-peanut-butter-protein-bar-50g/">
+        <img data-src="//cdn11.bigcommerce.com/images/peanut.png" src="/img/loading.svg">
+      </a>
+    </figure>
+    <div class="card-body">
+      <h4 class="card-title"><a href="/nicks-peanut-butter-protein-bar-50g/">N!ck's - Peanut Butter Protein Bar - 50g</a></h4>
+      <div class="card-text--price"><span class="price price--withoutTax">&#163;1.25</span></div>
+    </div>
+  </li>
+</ul>
+</body></html>
+"""
+
+
+def test_scan_prunes_items_no_longer_listed_on_a_successful_refetch(tmp_path, monkeypatch):
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    state_path = tmp_path / "state.json"
+    feed_path = tmp_path / "feed.xml"
+
+    def scan_once(html):
+        monkeypatch.setattr(cw, "fetch", lambda url, user_agent, timeout, retries=3: html)
+        return cw.scan(
+            urls=[BASE_URL], state_path=state_path, feed_path=feed_path,
+            feed_title="test", feed_link=BASE_URL, feed_description="test",
+            user_agent="test-agent", timeout=5.0, max_items=50,
+            respect_robots=True, selectors=DEFAULT_SELECTORS, keywords=None,
+        )
+
+    scan_once(SAMPLE_HTML)  # both products tracked
+    scan_once(SAMPLE_HTML_GRENADE_GONE)  # Grenade no longer on the page
+
+    import json
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert "https://cheapfood.co.uk/grenade-oreo-protein-bar-60g/" not in state
+    assert "https://cheapfood.co.uk/nicks-peanut-butter-protein-bar-50g/" in state
+
+    feed_xml = feed_path.read_text(encoding="utf-8")
+    assert "Oreo" not in feed_xml
+    assert "Peanut Butter" in feed_xml
+
+
+def test_scan_does_not_prune_on_a_failed_refetch(tmp_path, monkeypatch):
+    """A page that fails to load must never be treated as 'nothing listed'."""
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    state_path = tmp_path / "state.json"
+    feed_path = tmp_path / "feed.xml"
+
+    monkeypatch.setattr(cw, "fetch", lambda url, user_agent, timeout, retries=3: SAMPLE_HTML)
+    cw.scan(
+        urls=[BASE_URL], state_path=state_path, feed_path=feed_path,
+        feed_title="test", feed_link=BASE_URL, feed_description="test",
+        user_agent="test-agent", timeout=5.0, max_items=50,
+        respect_robots=True, selectors=DEFAULT_SELECTORS, keywords=None,
+    )
+
+    def failing_fetch(url, user_agent, timeout, retries=3):
+        raise cw.WatchError("simulated network failure")
+
+    monkeypatch.setattr(cw, "fetch", failing_fetch)
+    cw.scan(
+        urls=[BASE_URL], state_path=state_path, feed_path=feed_path,
+        feed_title="test", feed_link=BASE_URL, feed_description="test",
+        user_agent="test-agent", timeout=5.0, max_items=50,
+        respect_robots=True, selectors=DEFAULT_SELECTORS, keywords=None,
+    )
+
+    import json
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    # Both products must still be tracked — the failed fetch told us
+    # nothing about whether they're still listed.
+    assert "https://cheapfood.co.uk/grenade-oreo-protein-bar-60g/" in state
+    assert "https://cheapfood.co.uk/nicks-peanut-butter-protein-bar-50g/" in state
