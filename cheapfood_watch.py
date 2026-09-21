@@ -188,6 +188,34 @@ def fetch(url: str, user_agent: str, timeout: float, retries: int = 3) -> str:
     raise WatchError(f"Giving up fetching {url}: {last_exc}")
 
 
+def check_product_page_in_stock(
+    url: str, user_agent: str, timeout: float, respect_robots: bool
+) -> bool:
+    """Fetch a single product's own page and check for an out-of-stock notice.
+
+    This store's category grid doesn't expose stock status in the listing
+    card at all — the "Sorry currently out of stock" message only appears
+    on the individual product page (in an ``alertBox--error``). Checking
+    that requires a separate request per product, which is why this is
+    kept optional via ``--no-verify-stock`` for anyone who'd rather trade
+    accuracy for fewer requests.
+
+    Fails open (returns True — "assume still in stock") on any fetch
+    problem, and on a robots.txt disallow, since we shouldn't silently
+    prune a real product over our own network hiccup or a page we're not
+    permitted to check.
+    """
+    if respect_robots and not robots_allow(url, user_agent):
+        LOG.warning("robots.txt disallows checking stock on %s — assuming in stock", url)
+        return True
+    try:
+        html = fetch(url, user_agent, timeout)
+    except WatchError as exc:
+        LOG.warning("Couldn't verify stock status for %s (%s) — assuming in stock", url, exc)
+        return True
+    return not OUT_OF_STOCK_PATTERN.search(html)
+
+
 # --------------------------------------------------------------------------- #
 # Parsing
 # --------------------------------------------------------------------------- #
@@ -370,6 +398,7 @@ def scan(
     selectors: dict,
     keywords: Optional[list[str]] = None,
     dump_html_path: Optional[Path] = None,
+    verify_stock: bool = True,
 ) -> list[Product]:
     """Run one scan across ``urls``, update the feed, return newly-seen products."""
     state = load_state(state_path)
@@ -423,6 +452,26 @@ def scan(
                 len(out_of_stock), url, ", ".join(p.title for p in out_of_stock),
             )
         matching = [p for p in matching if p.in_stock]
+
+        if verify_stock:
+            # The category grid itself never says a product is unavailable
+            # for this store — only the product's own page does — so a
+            # second, per-product check is the only reliable way to catch
+            # "still listed but actually out of stock".
+            still_in_stock = []
+            newly_out_of_stock = []
+            for product in matching:
+                if check_product_page_in_stock(product.url, user_agent, timeout, respect_robots):
+                    still_in_stock.append(product)
+                else:
+                    newly_out_of_stock.append(product)
+            if newly_out_of_stock:
+                LOG.info(
+                    "%d product page(s) confirm out of stock — excluded: %s",
+                    len(newly_out_of_stock),
+                    ", ".join(p.title for p in newly_out_of_stock),
+                )
+            matching = still_in_stock
 
         for product in matching:
             currently_listed_urls.add(product.url)
@@ -512,6 +561,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--interval", type=float, default=0.0, help="If > 0, loop forever, sleeping this many seconds between scans, instead of exiting after one run")
     parser.add_argument("--ignore-robots", action="store_true", help="Skip the robots.txt check (not recommended)")
+    parser.add_argument(
+        "--no-verify-stock", dest="verify_stock", action="store_false", default=True,
+        help="Skip fetching each tracked product's own page to confirm it's actually "
+             "in stock (faster, fewer requests, but relies solely on the category "
+             "page — which this store doesn't reliably expose stock status on)",
+    )
     parser.add_argument("--dump-html", type=Path, default=None, help="Write the raw HTML of the first URL here, for debugging selectors")
     parser.add_argument("--selector-card", default=DEFAULT_SELECTORS["card"])
     parser.add_argument("--selector-title", default=DEFAULT_SELECTORS["title_link"])
@@ -548,6 +603,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             selectors=selectors,
             keywords=args.keywords,
             dump_html_path=args.dump_html,
+            verify_stock=args.verify_stock,
         )
         for product in new_products:
             price_bit = product.price or "price n/a"
