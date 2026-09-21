@@ -367,6 +367,7 @@ def test_scan_prunes_a_product_still_listed_but_marked_sold_out(tmp_path, monkey
             feed_title="test", feed_link=BASE_URL, feed_description="test",
             user_agent="test-agent", timeout=5.0, max_items=50,
             respect_robots=True, selectors=DEFAULT_SELECTORS, keywords=None,
+            verify_stock=False,  # isolate the category-grid-text detection path
         )
 
     scan_once(SAMPLE_HTML)  # both products tracked, both in stock
@@ -380,3 +381,92 @@ def test_scan_prunes_a_product_still_listed_but_marked_sold_out(tmp_path, monkey
     feed_xml = feed_path.read_text(encoding="utf-8")
     assert "Oreo" not in feed_xml
     assert "Peanut Butter" in feed_xml
+
+
+# This store's category grid never says a product is unavailable — only the
+# individual product page does, in an alertBox--error. These fixtures mirror
+# the real markup the user pasted from that page.
+PRODUCT_PAGE_OUT_OF_STOCK = """
+<html><body><section class="productView-details">
+<div class="alertBox alertBox--error">
+  <p class="alertBox-column alertBox-message">
+    <span>Sorry currently out of stock, please check back in the future</span>
+  </p>
+</div>
+</section></body></html>
+"""
+
+PRODUCT_PAGE_IN_STOCK = """
+<html><body><section class="productView-details">
+<button class="button button--primary">Add to Cart</button>
+</section></body></html>
+"""
+
+
+def test_check_product_page_in_stock_detects_the_real_out_of_stock_notice(monkeypatch):
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    monkeypatch.setattr(cw, "fetch", lambda url, ua, timeout, retries=3: PRODUCT_PAGE_OUT_OF_STOCK)
+    assert cw.check_product_page_in_stock("https://cheapfood.co.uk/x/", "ua", 5.0, True) is False
+
+
+def test_check_product_page_in_stock_true_for_a_normal_page(monkeypatch):
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    monkeypatch.setattr(cw, "fetch", lambda url, ua, timeout, retries=3: PRODUCT_PAGE_IN_STOCK)
+    assert cw.check_product_page_in_stock("https://cheapfood.co.uk/x/", "ua", 5.0, True) is True
+
+
+def test_check_product_page_in_stock_fails_open_on_fetch_error(monkeypatch):
+    """A network hiccup checking stock must never look like 'confirmed
+    out of stock' — that would wrongly prune a real, available product."""
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+
+    def failing_fetch(url, ua, timeout, retries=3):
+        raise cw.WatchError("simulated failure")
+
+    monkeypatch.setattr(cw, "fetch", failing_fetch)
+    assert cw.check_product_page_in_stock("https://cheapfood.co.uk/x/", "ua", 5.0, True) is True
+
+
+def test_scan_verify_stock_catches_a_card_that_looks_fine_but_product_page_says_sold_out(
+    tmp_path, monkeypatch,
+):
+    """The exact real-world case: the category card shows no stock signal
+    at all (parse-level in_stock stays True), but the product's own page
+    reveals it's genuinely out of stock — verify_stock is what catches it."""
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    state_path = tmp_path / "state.json"
+    feed_path = tmp_path / "feed.xml"
+
+    grenade_url = "https://cheapfood.co.uk/grenade-oreo-protein-bar-60g/"
+    nicks_url = "https://cheapfood.co.uk/nicks-peanut-butter-protein-bar-50g/"
+
+    def fake_fetch(url, user_agent, timeout, retries=3):
+        if url == BASE_URL:
+            return SAMPLE_HTML  # category grid: both cards look completely normal
+        if url == grenade_url:
+            return PRODUCT_PAGE_OUT_OF_STOCK
+        if url == nicks_url:
+            return PRODUCT_PAGE_IN_STOCK
+        raise AssertionError(f"unexpected fetch: {url}")
+
+    monkeypatch.setattr(cw, "fetch", fake_fetch)
+    cw.scan(
+        urls=[BASE_URL], state_path=state_path, feed_path=feed_path,
+        feed_title="test", feed_link=BASE_URL, feed_description="test",
+        user_agent="test-agent", timeout=5.0, max_items=50,
+        respect_robots=True, selectors=DEFAULT_SELECTORS, keywords=None,
+        verify_stock=True,
+    )
+
+    import json
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert grenade_url not in state
+    assert nicks_url in state
