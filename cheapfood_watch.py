@@ -213,7 +213,19 @@ def check_product_page_in_stock(
     except WatchError as exc:
         LOG.warning("Couldn't verify stock status for %s (%s) — assuming in stock", url, exc)
         return True
-    return not OUT_OF_STOCK_PATTERN.search(html)
+
+    # Scoped to the specific error banner (confirmed from the real markup:
+    # <div class="alertBox alertBox--error"><p class="alertBox-message">
+    # <span>Sorry currently out of stock...</span></p></div>) rather than
+    # searching the whole page's text. A sitewide footer/newsletter widget
+    # mentioning "sold out" or "notify me" elsewhere on every product page
+    # would otherwise false-positive on every single product, not just a
+    # genuinely unavailable one.
+    soup = BeautifulSoup(html, "lxml")
+    error_box = soup.select_one(".alertBox--error, .alertBox-message")
+    if error_box and OUT_OF_STOCK_PATTERN.search(error_box.get_text(" ", strip=True)):
+        return False
+    return True
 
 
 # --------------------------------------------------------------------------- #
