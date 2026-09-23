@@ -402,6 +402,24 @@ PRODUCT_PAGE_IN_STOCK = """
 </section></body></html>
 """
 
+# A normal, genuinely in-stock page that ALSO happens to mention
+# "sold out" / "notify me" sitewide — e.g. a generic newsletter widget in
+# the footer, present on every product page regardless of that product's
+# own stock status. Scanning the whole page's text (the first version of
+# this check) would wrongly flag this as out of stock; scoping to the
+# specific alertBox--error element must not.
+PRODUCT_PAGE_IN_STOCK_WITH_DISTRACTOR_TEXT = """
+<html><body>
+<section class="productView-details">
+<button class="button button--primary">Add to Cart</button>
+</section>
+<footer>
+<p>Sign up to be notified when your favourite sold out items are back
+in stock — never miss a restock again!</p>
+</footer>
+</body></html>
+"""
+
 
 def test_check_product_page_in_stock_detects_the_real_out_of_stock_notice(monkeypatch):
     import cheapfood_watch as cw
@@ -409,6 +427,19 @@ def test_check_product_page_in_stock_detects_the_real_out_of_stock_notice(monkey
     monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
     monkeypatch.setattr(cw, "fetch", lambda url, ua, timeout, retries=3: PRODUCT_PAGE_OUT_OF_STOCK)
     assert cw.check_product_page_in_stock("https://cheapfood.co.uk/x/", "ua", 5.0, True) is False
+
+
+def test_check_product_page_in_stock_ignores_unrelated_sitewide_text(monkeypatch):
+    """The exact bug this scoping fixes: sitewide 'sold out' / 'notify me'
+    copy elsewhere on the page (e.g. a footer widget) must not be mistaken
+    for this specific product's own alertBox--error."""
+    import cheapfood_watch as cw
+
+    monkeypatch.setattr(cw, "robots_allow", lambda url, ua: True)
+    monkeypatch.setattr(
+        cw, "fetch", lambda url, ua, timeout, retries=3: PRODUCT_PAGE_IN_STOCK_WITH_DISTRACTOR_TEXT
+    )
+    assert cw.check_product_page_in_stock("https://cheapfood.co.uk/x/", "ua", 5.0, True) is True
 
 
 def test_check_product_page_in_stock_true_for_a_normal_page(monkeypatch):
