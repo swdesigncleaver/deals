@@ -7,14 +7,6 @@
     "title": "Box of My Protein - Layered Bar - Multi Pack - 12 x Protein Bars",
     "was_price": null
   },
-  "https://cheapfood.co.uk/grenade-carb-killer-chocolate-chip-salted-caramel-protein-bar-60g/": {
-    "first_seen": "2026-11-13T08:38:59.817534+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/18448/32144/Untitled%2520design%2520-%25202022-12-20T121527.914.0g1DDV1TO0eeCfArH29tVg__95281.1671539073.png?c=2",
-    "price": "\u00a30.55",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Grenade - Carb Killer - Chocolate Chip Salted Caramel Protein Bar - 60g",
-    "was_price": "\u00a32.00"
-  },
   "https://cheapfood.co.uk/grenade-carb-killer-high-protein-bar-white-chocolate-salted-peanut-60g/": {
     "first_seen": "2026-09-23T17:41:51.550587+00:00",
     "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/12354/24053/apiujkgbp__89750.1622290562.png?c=2",
@@ -29,14 +21,6 @@
     "price": "\u00a31.25",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
     "title": "My Protein - Brownie - Chocolate Chip - 23g Protein - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/my-protein-crispy-wafer-chocolate-flavour-42g/": {
-    "first_seen": "2026-11-12T12:25:47.835283+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/22983/41641/Untitled%2520design%2520-%25202024-03-11T092828.892.J2n6rjAf20Cpf6jozJAIrw__61112.1710149406.png?c=2",
-    "price": "\u00a30.99",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "My Protein - Crispy Wafer - Chocolate Flavour - 42g",
     "was_price": null
   },
   "https://cheapfood.co.uk/my-protein-layered-bar-triple-chocolate-flavour-protein-bar-60g/": {
@@ -55,12 +39,12 @@
     "title": "Pip & Nut - Peanut Butter Protein Bar - 46g",
     "was_price": null
   },
-  "https://cheapfood.co.uk/warrior-raw-chocolate-orange-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-11T15:32:25.914219+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29594/55290/Untitled_design_-_2026-07-20T094848.152__12676.1784537399.png?c=2",
-    "price": "\u00a30.79",
+  "https://cheapfood.co.uk/warrior-crunch-white-chocolate-crisp-flavour-high-protein-bar-64g/": {
+    "first_seen": "2026-11-13T17:03:44.545677+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29524/55146/Untitled_design_-_2026-07-09T084730.599__45964.1783583319.png?c=2",
+    "price": "\u00a30.99",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Chocolate Orange Flavoured Protein Oat Bar - 75g",
+    "title": "Warrior - Crunch - White Chocolate Crisp Flavour High Protein Bar - 64g",
     "was_price": null
   }
 }
