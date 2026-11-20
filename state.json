@@ -7,20 +7,20 @@
     "title": "Box of My Protein - Layered Bar - Multi Pack - 12 x Protein Bars",
     "was_price": null
   },
-  "https://cheapfood.co.uk/grenade-carb-killer-high-protein-bar-white-chocolate-salted-peanut-60g/": {
-    "first_seen": "2026-09-23T17:41:51.550587+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/12354/24053/apiujkgbp__89750.1622290562.png?c=2",
-    "price": "\u00a31.40",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Grenade - Carb Killer - High Protein Bar - White Chocolate Salted Peanut - 60g",
-    "was_price": null
-  },
   "https://cheapfood.co.uk/my-protein-crispy-wafer-chocolate-flavour-42g/": {
     "first_seen": "2026-11-19T18:32:55.486397+00:00",
     "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/22983/41641/Untitled%2520design%2520-%25202024-03-11T092828.892.J2n6rjAf20Cpf6jozJAIrw__61112.1710149406.png?c=2",
     "price": "\u00a30.99",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
     "title": "My Protein - Crispy Wafer - Chocolate Flavour - 42g",
+    "was_price": null
+  },
+  "https://cheapfood.co.uk/n-ck-s-peanut-butter-protein-bar-no-added-sugar-50g/": {
+    "first_seen": "2026-11-20T17:56:55.515071+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29577/55255/Untitled_design_-_2026-07-10T153123.641__99451.1783694014.png?c=2",
+    "price": "\u00a31.25",
+    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
+    "title": "N!ck's - Peanut Butter Protein Bar - No Added Sugar - 50g",
     "was_price": null
   }
 }
