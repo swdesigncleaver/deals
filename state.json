@@ -1,11 +1,11 @@
 {
-  "https://cheapfood.co.uk/box-of-my-protein-layered-bar-multi-pack-12-x-protein-bars/": {
-    "first_seen": "2026-10-15T10:29:00.321967+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/30307/56766/Untitled_design_-_2026-10-15T100824.559__66483.1792055330.png?c=2",
-    "price": "\u00a39.99",
+  "https://cheapfood.co.uk/grenade-carb-killer-chocolate-chip-salted-caramel-protein-bar-60g/": {
+    "first_seen": "2026-11-25T15:57:05.581462+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/18448/32144/Untitled%2520design%2520-%25202022-12-20T121527.914.0g1DDV1TO0eeCfArH29tVg__95281.1671539073.png?c=2",
+    "price": "\u00a30.55",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Box of My Protein - Layered Bar - Multi Pack - 12 x Protein Bars",
-    "was_price": null
+    "title": "Grenade - Carb Killer - Chocolate Chip Salted Caramel Protein Bar - 60g",
+    "was_price": "\u00a32.00"
   },
   "https://cheapfood.co.uk/grenade-chocolate-chip-cookie-dough-high-protein-low-sugar-protein-bar-60g/": {
     "first_seen": "2026-11-24T22:41:38.573877+00:00",
@@ -13,6 +13,30 @@
     "price": "\u00a31.60",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
     "title": "Grenade - Chocolate Chip Cookie Dough - High Protein - Low Sugar - Protein Bar - 60g",
+    "was_price": null
+  },
+  "https://cheapfood.co.uk/grenade-oreo-high-protein-low-sugar-protein-bar-60g/": {
+    "first_seen": "2026-11-25T15:57:05.581462+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/22199/40015/Untitled%2520design%2520-%25202023-12-22T111518.577.PekxyyZK0ESIMZUFIHknAA__43360.1703243758.png?c=2",
+    "price": "\u00a30.55",
+    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
+    "title": "Grenade - Oreo - High Protein - Low Sugar - Protein Bar - 60g",
+    "was_price": "\u00a31.99"
+  },
+  "https://cheapfood.co.uk/grenade-oreo-white-high-protein-low-sugar-protein-bar-60g/": {
+    "first_seen": "2026-11-25T15:57:05.581462+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/22250/40119/Untitled%2520design%2520-%25202024-01-11T131907.920.bAKpQACZOkajl81dmYobXw__31924.1704979220.png?c=2",
+    "price": "\u00a30.55",
+    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
+    "title": "Grenade - Oreo White - High Protein - Low Sugar - Protein Bar - 60g",
+    "was_price": "\u00a31.99"
+  },
+  "https://cheapfood.co.uk/my-protein-crispy-wafer-chocolate-flavour-42g/": {
+    "first_seen": "2026-11-25T15:57:05.581462+00:00",
+    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/22983/41641/Untitled%2520design%2520-%25202024-03-11T092828.892.J2n6rjAf20Cpf6jozJAIrw__61112.1710149406.png?c=2",
+    "price": "\u00a30.99",
+    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
+    "title": "My Protein - Crispy Wafer - Chocolate Flavour - 42g",
     "was_price": null
   },
   "https://cheapfood.co.uk/n-ck-s-caramel-chocolate-protein-bar-no-added-sugar-50g/": {
@@ -61,62 +85,6 @@
     "price": "\u00a30.99",
     "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
     "title": "Warrior - Crunch - White Chocolate Crisp Flavour High Protein Bar - 64g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-chocolate-brownie-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29881/55880/Untitled_design_-_2026-08-14T153449.278__92096.1786718132.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Chocolate Brownie Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-chocolate-orange-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29594/55290/Untitled_design_-_2026-07-20T094848.152__12676.1784537399.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Chocolate Orange Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-chocolate-peanut-butter-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29642/55387/Untitled_design_-_2026-07-21T114232.984__80905.1784630609.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Chocolate Peanut Butter Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-cookies-cream-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29618/55338/Untitled_design_-_2026-07-20T153455.177__02741.1784558174.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Cookies & Cream Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-honey-berry-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/30140/56411/Untitled_design_-_2026-09-18T104539.709__99700.1789724790.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Honey Berry Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-strawberry-cheescake-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/30142/56415/Untitled_design_-_2026-09-18T111313.610__92469.1789726480.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - Strawberry Cheescake Flavoured Protein Oat Bar - 75g",
-    "was_price": null
-  },
-  "https://cheapfood.co.uk/warrior-raw-white-chocolate-cranberry-flavoured-protein-oat-bar-75g/": {
-    "first_seen": "2026-11-24T22:41:38.573877+00:00",
-    "image": "https://cdn11.bigcommerce.com/s-axqppvczl4/images/stencil/500x659/products/29643/55389/Untitled_design_-_2026-07-21T115512.361__51414.1784631370.png?c=2",
-    "price": "\u00a30.79",
-    "source": "https://cheapfood.co.uk/food/sports-energy/?sort=newest",
-    "title": "Warrior - Raw - White Chocolate Cranberry Flavoured Protein Oat Bar - 75g",
     "was_price": null
   }
 }
